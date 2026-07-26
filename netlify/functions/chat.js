@@ -4,7 +4,7 @@
 // mismo: recibir el mensaje que mandó la página, agregarle la llave
 // secreta, llevárselo a la IA, y traer la respuesta de vuelta.
 
-const MODEL = "gemini-2.5-flash";
+const MODEL = "gemini-flash-latest";
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") {
