@@ -1,24 +1,36 @@
-// Este archivo es "el mesero". Corre solo, en el hosting, nunca en el
-// navegador del usuario. Ahora le habla a Gemini (Google), que tiene
-// una capa gratuita, en vez de a Anthropic. Su trabajo sigue siendo el
-// mismo: recibir el mensaje que mandó la página, agregarle la llave
-// secreta, llevárselo a la IA, y traer la respuesta de vuelta.
+// Este archivo es "el mesero" de Jerosis. Corre solo, en el hosting,
+// nunca en el navegador del usuario. Le habla a Gemini (Google), que
+// tiene una capa gratuita. Ahora además permite que le hablen desde
+// otros lugares además de la página web (como la app de escritorio),
+// gracias a los headers CORS de acá abajo.
 
 const MODEL = "gemini-flash-latest";
 
+// Estos headers son el "permiso" para que otros orígenes (como la
+// app de escritorio, que no es una página web común) puedan hablarle
+// a este mesero. Sin esto, el navegador bloquea el pedido antes de
+// que llegue.
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
 exports.handler = async function (event) {
+  // Los navegadores mandan primero un pedido "OPTIONS" de prueba,
+  // preguntando si tienen permiso, antes del pedido real. Acá le
+  // decimos que sí.
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 204, headers: CORS_HEADERS, body: "" };
+  }
+
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Método no permitido" };
+    return { statusCode: 405, headers: CORS_HEADERS, body: "Método no permitido" };
   }
 
   try {
-    // Esto es lo que la página (jerosis.html) le mandó al mesero:
-    // el historial de la charla y las instrucciones de personalidad.
     const { messages, system } = JSON.parse(event.body);
 
-    // Gemini espera el historial en un formato un poco distinto al
-    // que usa la página: en vez de "assistant" usa "model". Acá lo
-    // traducimos.
     const contents = (messages || []).map((m) => ({
       role: m.role === "assistant" ? "model" : "user",
       parts: [{ text: m.content }],
@@ -40,10 +52,6 @@ exports.handler = async function (event) {
 
     const data = await response.json();
 
-    // Gemini avisa que se acabó la cuota gratis del día con un
-    // error 429 (o el estado "RESOURCE_EXHAUSTED"). Acá lo
-    // detectamos y le avisamos a la página con una señal clara,
-    // para que muestre el cartelito en vez de un error feo.
     const quotaExceeded =
       response.status === 429 ||
       (data.error && data.error.status === "RESOURCE_EXHAUSTED");
@@ -51,6 +59,7 @@ exports.handler = async function (event) {
     if (quotaExceeded) {
       return {
         statusCode: 429,
+        headers: CORS_HEADERS,
         body: JSON.stringify({ quotaExceeded: true }),
       };
     }
@@ -58,6 +67,7 @@ exports.handler = async function (event) {
     if (!response.ok) {
       return {
         statusCode: response.status,
+        headers: CORS_HEADERS,
         body: JSON.stringify({
           error: { message: (data.error && data.error.message) || "Error de Gemini" },
         }),
@@ -73,15 +83,15 @@ exports.handler = async function (event) {
         ? data.candidates[0].content.parts[0].text
         : "";
 
-    // Devolvemos la respuesta en el mismo formato que ya entendía la
-    // página, para no tener que tocar mucho más código del lado del chat.
     return {
       statusCode: 200,
+      headers: CORS_HEADERS,
       body: JSON.stringify({ content: [{ type: "text", text: reply }] }),
     };
   } catch (err) {
     return {
       statusCode: 500,
+      headers: CORS_HEADERS,
       body: JSON.stringify({ error: { message: "El mesero se tropezó: " + err.message } }),
     };
   }
