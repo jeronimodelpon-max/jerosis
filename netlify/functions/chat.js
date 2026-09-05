@@ -1,15 +1,12 @@
 // Este archivo es "el mesero" de Jerosis. Corre solo, en el hosting,
-// nunca en el navegador del usuario. Le habla a Gemini (Google), que
-// tiene una capa gratuita. Ahora además permite que le hablen desde
-// otros lugares además de la página web (como la app de escritorio),
-// gracias a los headers CORS de acá abajo.
+// nunca en el navegador del usuario. Ahora le habla a Groq (modelos
+// abiertos, gratis, sin tarjeta) en vez de a Gemini, porque el modelo
+// gratis de Gemini viene mostrando saturación seguido. También
+// permite que le hablen desde otros lugares además de la página web
+// (como la app de escritorio), gracias a los headers CORS de abajo.
 
-const MODEL = "gemini-flash-latest";
+const MODEL = "openai/gpt-oss-120b";
 
-// Estos headers son el "permiso" para que otros orígenes (como la
-// app de escritorio, que no es una página web común) puedan hablarle
-// a este mesero. Sin esto, el navegador bloquea el pedido antes de
-// que llegue.
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -17,9 +14,6 @@ const CORS_HEADERS = {
 };
 
 exports.handler = async function (event) {
-  // Los navegadores mandan primero un pedido "OPTIONS" de prueba,
-  // preguntando si tienen permiso, antes del pedido real. Acá le
-  // decimos que sí.
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 204, headers: CORS_HEADERS, body: "" };
   }
@@ -31,32 +25,29 @@ exports.handler = async function (event) {
   try {
     const { messages, system } = JSON.parse(event.body);
 
-    const contents = (messages || []).map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
-    }));
+    // Groq habla el mismo "idioma" que OpenAI: un array de mensajes
+    // con role/content, donde el system prompt es un mensaje más,
+    // el primero de la lista.
+    const chatMessages = [
+      { role: "system", content: system },
+      ...(messages || []).map((m) => ({ role: m.role, content: m.content })),
+    ];
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
-
-    const response = await fetch(url, {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-goog-api-key": process.env.GEMINI_API_KEY,
+        Authorization: "Bearer " + process.env.GROQ_API_KEY,
       },
       body: JSON.stringify({
-        system_instruction: { parts: [{ text: system }] },
-        contents: contents,
+        model: MODEL,
+        messages: chatMessages,
       }),
     });
 
     const data = await response.json();
 
-    const quotaExceeded =
-      response.status === 429 ||
-      (data.error && data.error.status === "RESOURCE_EXHAUSTED");
-
-    if (quotaExceeded) {
+    if (response.status === 429) {
       return {
         statusCode: 429,
         headers: CORS_HEADERS,
@@ -69,18 +60,14 @@ exports.handler = async function (event) {
         statusCode: response.status,
         headers: CORS_HEADERS,
         body: JSON.stringify({
-          error: { message: (data.error && data.error.message) || "Error de Gemini" },
+          error: { message: (data.error && data.error.message) || "Error de Groq" },
         }),
       };
     }
 
     const reply =
-      data.candidates &&
-      data.candidates[0] &&
-      data.candidates[0].content &&
-      data.candidates[0].content.parts &&
-      data.candidates[0].content.parts[0]
-        ? data.candidates[0].content.parts[0].text
+      data.choices && data.choices[0] && data.choices[0].message
+        ? data.choices[0].message.content
         : "";
 
     return {
