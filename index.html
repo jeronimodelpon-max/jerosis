@@ -286,6 +286,10 @@
     border-radius:50%;
     background:#5ecb8a;
   }
+  #download-desktop:hover{
+    border-color: var(--accent-dim) !important;
+    color: var(--text-primary) !important;
+  }
 
   main{
     flex:1;
@@ -641,7 +645,16 @@
         <h1>Jerosis</h1>
         <span class="tagline">Inteligencia conversacional</span>
       </div>
-      <div class="status"><span class="dot"></span>en línea</div>
+      <div style="display:flex; align-items:center; gap:14px;">
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
+          <a id="download-desktop" href="https://github.com/jeronimodelpon-max/jerosis/releases/download/v1.0/Jerosis-Desktop.zip" target="_blank" rel="noopener" style="display:flex; align-items:center; gap:6px; padding:7px 14px; border-radius:999px; border:1px solid var(--border); background:var(--surface); color:var(--text-secondary); font-size:12.5px; text-decoration:none; transition:border-color 0.15s ease, color 0.15s ease;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Descargar para escritorio
+          </a>
+          <span style="font-size:10px; color:var(--text-muted);">Solo para computadora (Windows)</span>
+        </div>
+        <div class="status"><span class="dot"></span>en línea</div>
+      </div>
     </header>
 
     <main id="main">
