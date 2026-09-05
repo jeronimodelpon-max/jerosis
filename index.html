@@ -617,6 +617,21 @@
       <button id="name-submit">Empezar a charlar</button>
     </div>
   </div>
+
+  <div class="name-modal-backdrop" id="install-help-backdrop" style="display:none;">
+    <div class="name-modal" style="text-align:left; width:400px;">
+      <div class="mark" style="margin:0 auto 16px;"></div>
+      <h2 style="text-align:center;">Instalar Jerosis en tu compu</h2>
+      <ol style="font-size:13px; color:var(--text-secondary); line-height:1.7; padding-left:20px; margin:14px 0;">
+        <li>Descargá el archivo <strong style="color:var(--text-primary);">Jerosis-Desktop.zip</strong> con el botón de arriba.</li>
+        <li>Hacé clic derecho sobre el zip descargado y elegí <strong style="color:var(--text-primary);">"Extraer todo"</strong>.</li>
+        <li>Entrá a la carpeta <strong style="color:var(--text-primary);">win-unpacked</strong> que se creó, y hacé doble clic en <strong style="color:var(--text-primary);">Jerosis.exe</strong>.</li>
+        <li>Windows puede avisar "Windows protegió tu PC" (es normal, la app no tiene firma paga). Tocá <strong style="color:var(--text-primary);">"Más información"</strong> y después <strong style="color:var(--text-primary);">"Ejecutar de todos modos"</strong>.</li>
+        <li>Va a aparecer un avatarcito flotando en tu pantalla — hacele clic para abrir el chat. Es solo para Windows.</li>
+      </ol>
+      <button id="install-help-close">Entendido</button>
+    </div>
+  </div>
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-top">
       <button id="toggle-sidebar" aria-label="Desplegar barra lateral">
@@ -651,7 +666,10 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             Descargar para escritorio
           </a>
-          <span style="font-size:10px; color:var(--text-muted);">Solo para computadora (Windows)</span>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:10px; color:var(--text-muted);">Solo para computadora (Windows)</span>
+            <button id="install-help-btn" style="background:none; border:none; padding:0; color:var(--accent); font-size:10px; text-decoration:underline; cursor:pointer; font-family:'Inter', sans-serif;">¿Cómo lo instalo?</button>
+          </div>
         </div>
         <div class="status"><span class="dot"></span>en línea</div>
       </div>
@@ -1096,6 +1114,19 @@ function submitName(){
 }
 
 nameSubmit.addEventListener('click', submitName);
+
+const installHelpBtn = document.getElementById('install-help-btn');
+const installHelpBackdrop = document.getElementById('install-help-backdrop');
+const installHelpClose = document.getElementById('install-help-close');
+installHelpBtn.addEventListener('click', () => {
+  installHelpBackdrop.style.display = 'flex';
+});
+installHelpClose.addEventListener('click', () => {
+  installHelpBackdrop.style.display = 'none';
+});
+installHelpBackdrop.addEventListener('click', (e) => {
+  if (e.target === installHelpBackdrop) installHelpBackdrop.style.display = 'none';
+});
 nameInput.addEventListener('keydown', (e) => {
   if(e.key === 'Enter'){ e.preventDefault(); submitName(); }
 });
